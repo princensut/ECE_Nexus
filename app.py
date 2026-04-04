@@ -8,7 +8,7 @@ import requests
 app = Flask(__name__)
 
 # ── API config ────────────────────────────────────────────────────────────────
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")  # <-- paste your key here
+GROQ_API_KEY = "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" # <-- paste your key here
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -31,7 +31,7 @@ def call_groq(prompt: str) -> str:
 
 
 # ── Debug route ───────────────────────────────────────────────────────────────
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_API_KEY = "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"
 
 @app.route("/api/debug")
 def debug():
