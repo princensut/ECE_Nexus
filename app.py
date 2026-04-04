@@ -1,29 +1,53 @@
 from flask import Flask, render_template, request, jsonify
-from groq import Groq
+from dotenv import load_dotenv
 import json
+
 import os
+import requests
 
 app = Flask(__name__)
 
 # ── API config ────────────────────────────────────────────────────────────────
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")  # <-- paste your key here
+GROQ_MODEL = "llama-3.1-8b-instant"
+GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
+
+
+# ── Helper — uses plain requests, no groq SDK ─────────────────────────────────
+def call_groq(prompt: str) -> str:
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "model": GROQ_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+        "max_tokens": 2048,
+    }
+    resp = requests.post(GROQ_URL, headers=headers, json=payload, timeout=30)
+    resp.raise_for_status()
+    return resp.json()["choices"][0]["message"]["content"]
+
+
+# ── Debug route ───────────────────────────────────────────────────────────────
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
-# Swap to "llama-3.3-70b-versatile" for higher quality / slower responses
-GROQ_MODEL = "llama-3.1-8b-instant"
+@app.route("/api/debug")
+def debug():
+    
+    key_status = "SET" if GROQ_API_KEY else "MISSING"
+    try:
+        result = call_groq("Reply with just the word: OK")
+        api_status = "OK — " + result.strip()
+    except Exception as e:
+        api_status = f"FAILED — {str(e)}"
 
-# Single shared client instance
-client = Groq(api_key=GROQ_API_KEY)
-
-
-# ── Helper ────────────────────────────────────────────────────────────────────
-def call_groq(prompt: str) -> str:
-    """Send a prompt to Groq and return the raw text response."""
-    completion = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
-    )
-    return completion.choices[0].message.content
+    return jsonify({
+        "api_key_status": key_status,
+        "model": GROQ_MODEL,
+        "groq_call": api_status,
+    })
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -34,10 +58,6 @@ def index():
 
 @app.route("/api/synthesize-graph", methods=["POST"])
 def synthesize_graph():
-    """
-    Accepts a concept string, queries Groq for a prerequisite DAG,
-    and returns a JSON dependency map.
-    """
     data = request.get_json()
     concept = data.get("concept", "").strip()
     if not concept:
@@ -69,10 +89,6 @@ def synthesize_graph():
 
 @app.route("/api/generate-schedule", methods=["POST"])
 def generate_schedule():
-    """
-    Accepts the user goal string and an ordered list of required topics,
-    returns a JSON array of time-blocked study sessions.
-    """
     data = request.get_json()
     goal = data.get("goal", "").strip()
     required_topics = data.get("required_topics", [])
@@ -117,4 +133,4 @@ def generate_schedule():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
