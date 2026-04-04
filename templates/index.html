@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLSI Nexus — AI ECE Dynamic Planner</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ece: {
+                            dark: '#0a0f1c',
+                            panel: '#111827',
+                            accent: '#2563eb',
+                            text: '#f1f5f9',
+                            grid: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="bg-ece-dark text-ece-text font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-ece-panel border-b border-slate-800 flex items-center justify-between px-6 py-3 shrink-0 z-10 shadow-lg shadow-black/50">
+        <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+            <h1 class="text-xl font-bold tracking-widest text-white uppercase">VLSI <span class="text-blue-500">Nexus</span></h1>
+        </div>
+        <nav class="flex space-x-6">
+            <button id="nav_page1" onclick="switchPage('page1')" class="nav-btn border-b-2 border-blue-500 text-blue-400 pb-1 text-sm font-semibold uppercase tracking-wider transition">Innovation Hub</button>
+            <button id="nav_page3" onclick="switchPage('page3')" class="nav-btn border-b-2 border-transparent text-slate-400 hover:text-white pb-1 text-sm font-semibold uppercase tracking-wider transition">Dependency Engine</button>
+            <button id="nav_page2" onclick="switchPage('page2')" class="nav-btn border-b-2 border-transparent text-slate-400 hover:text-white pb-1 text-sm font-semibold uppercase tracking-wider transition">Command Center</button>
+        </nav>
+    </header>
+
+    <!-- Main -->
+    <main class="flex-1 relative flex flex-col overflow-hidden">
+
+        <!-- PAGE 1 — Innovation Hub -->
+        <div id="page1" class="spa-page flex flex-1 flex-col items-center justify-center w-full relative overflow-y-auto py-12 min-h-0" style="background: radial-gradient(circle at 50% 50%, #1e293b 1px, transparent 1px) 0 0 / 30px 30px;">
+            <div class="absolute inset-0 bg-gradient-to-b from-ece-dark/80 to-ece-dark"></div>
+            <div class="relative z-10 text-center max-w-3xl px-6">
+                <h2 class="text-5xl font-extrabold text-white mb-6 tracking-tight">Synthesize Your <span class="text-blue-500">Architecture</span></h2>
+                <p class="text-lg text-slate-300 mb-8 leading-relaxed">
+                    Input your target concept. The engine will query the AI to construct a custom Directed Acyclic Graph of exact prerequisites required to master it.
+                </p>
+                <input type="text" id="topic-input"
+                    class="w-full bg-slate-900 border border-slate-700 rounded-lg px-6 py-4 focus:outline-none focus:border-blue-500 text-white transition text-xl mb-6 text-center shadow-xl"
+                    placeholder="E.g. Current Mirrors in MOSFETs">
+                <button id="generate-graph-btn"
+                    class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-full shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all uppercase tracking-widest min-w-[250px] flex justify-center items-center mx-auto">
+                    Synthesize Graph
+                </button>
+                <div id="graph-error" class="hidden mt-4 text-red-400 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- PAGE 3 — Dependency Engine -->
+        <div id="page3" class="spa-page hidden flex-1 w-full flex min-h-0">
+            <div class="w-1/3 bg-ece-panel border-r border-slate-800 flex flex-col min-h-0">
+                <div class="p-5 border-b border-slate-800">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-widest">Custom Topic Matrix</h3>
+                    <p class="text-xs text-slate-400 mt-1">Deselect modules you have mastered to prune the calculation graph.</p>
+                </div>
+                <div class="flex-1 overflow-y-auto p-5 space-y-2 min-h-0" id="topic-checkboxes">
+                    <div class="text-slate-500 text-sm text-center mt-10">Awaiting graph synthesis from Innovation Hub...</div>
+                </div>
+                <div class="p-5 border-t border-slate-800">
+                    <button id="proceed-plan-btn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg uppercase tracking-widest transition text-sm">
+                        Proceed to Command Center
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-ece-dark relative p-6 flex flex-col min-h-0">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Live Directed Acyclic Graph</h3>
+                <div class="flex-1 bg-slate-900 border border-slate-800 rounded-xl overflow-auto flex items-center justify-center p-4 min-h-0">
+                    <div id="mermaid-container" class="mermaid w-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2 — Command Center -->
+        <div id="page2" class="spa-page hidden flex-1 w-full flex flex-col min-h-0">
+            <div class="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 bg-ece-dark relative min-h-0">
+
+                <div class="bg-ece-panel border border-slate-700 rounded-xl p-6 shadow-xl">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Execution Constraints</h3>
+                    <div class="flex space-x-3">
+                        <input type="text" id="goal-input"
+                            class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-5 py-3 focus:outline-none focus:border-blue-500 text-white transition text-lg"
+                            placeholder="Define constraints: e.g. Build a 3 day intensive plan...">
+                        <button id="generate-schedule-btn"
+                            class="bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-lg font-bold uppercase tracking-wider transition flex items-center justify-center min-w-[140px]">
+                            Execute
+                        </button>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-3">Topological sort is computed server-side before querying the LLM.</p>
+                </div>
+
+                <div>
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center">
+                        Synthesized Execution Path
+                        <span id="schedule-status" class="ml-3 px-2 py-1 bg-slate-800 text-xs rounded text-blue-400">Awaiting Input</span>
+                    </h3>
+                    <div id="schedule-container" class="space-y-4">
+                        <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-6 text-center text-slate-500">
+                            Synthesize a graph first, prune it, then provide constraints above to generate a critical path.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+<script src="/static/script.js">
+    
+</script>
+</body>
+</html>
