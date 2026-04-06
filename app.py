@@ -1,11 +1,42 @@
 from flask import Flask, render_template, request, jsonify
 
 import json
-
+import re
 import os
 import requests
 
 app = Flask(__name__)
+
+
+# ── Robust JSON extractor ─────────────────────────────────────────────────────
+def extract_json(text: str):
+    """
+    Pulls a JSON object or array out of a string that may be wrapped in
+    markdown fences, have leading/trailing prose, or contain stray characters.
+    Tries in order:
+      1. Strip common markdown fences, then parse directly.
+      2. Regex-extract the first {...} or [...] block, then parse.
+    Raises json.JSONDecodeError if nothing works.
+    """
+    # 1. Strip all flavours of markdown code fences
+    cleaned = re.sub(r"```(?:json)?\s*", "", text, flags=re.IGNORECASE).replace("```", "").strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        pass
+
+    # 2. Pull the first {...} or [...] block (handles leading prose)
+    for pattern in (r"(\{[\s\S]*\})", r"(\[[\s\S]*\])"):
+        m = re.search(pattern, text)
+        if m:
+            try:
+                return json.loads(m.group(1))
+            except json.JSONDecodeError:
+                pass
+
+    # Nothing worked — raise so the caller can return a useful error
+    raise json.JSONDecodeError("No valid JSON found in model response", text, 0)
+
 
 # ── API config ────────────────────────────────────────────────────────────────
 GROQ_API_KEY = "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" # <-- paste your key here
@@ -66,20 +97,18 @@ def synthesize_graph():
     prompt = f"""
     You are an expert VLSI Engineering AI.
     Generate a prerequisite dependency graph for a student learning: '{concept}'.
-    Return EXACTLY a raw JSON object. Do not wrap in markdown format blocks.
-    Format example:
+    Return ONLY a raw JSON object — no markdown, no explanation, no extra text.
+    Format:
     {{
       "Topic A": {{"prereqs": []}},
       "Topic B": {{"prereqs": ["Topic A"]}}
     }}
-    Ensure strict technical accuracy [Topological Sortable Directed Acyclic Graph].
-    Keep the scope focused. Limit to 5 to 8 essential nodes maximum.
+    Rules: topologically sortable DAG, 5–8 nodes maximum, strict technical accuracy.
     """
 
     try:
         raw_text = call_groq(prompt)
-        clean_text = raw_text.replace("```json", "").replace("```", "").strip()
-        graph = json.loads(clean_text)
+        graph = extract_json(raw_text)
         return jsonify({"graph": graph})
     except json.JSONDecodeError as e:
         return jsonify({"error": "JSON parse failed", "detail": str(e), "raw": raw_text}), 500
@@ -107,10 +136,10 @@ def generate_schedule():
     TOPOLOGICAL CRITICAL PATH (Topics to learn): {topic_str}
 
     CONSTRAINT 1: Explain using Silicon level analogies. Focus on electron hole physics where applicable.
-    CONSTRAINT 2: Ensure absolute technical accuracy. Simplify if needed, but you MUST include the actual technical concept in brackets [like this] next to the simplification.
-    CONSTRAINT 3: Generate a time blocked study schedule allocating time to each topic in the Critical Path based on the user constraints.
+    CONSTRAINT 2: Ensure absolute technical accuracy. Simplify if needed, but include the actual technical concept in brackets [like this].
+    CONSTRAINT 3: Generate a time-blocked study schedule allocating time to each topic based on user constraints.
 
-    OUTPUT FORMAT: You must return EXACTLY a valid JSON array of objects. Do not wrap in markdown block characters.
+    Return ONLY a raw JSON array — no markdown, no explanation, no extra text.
     Format:
     [
       {{
@@ -123,8 +152,7 @@ def generate_schedule():
 
     try:
         raw_text = call_groq(prompt)
-        clean_text = raw_text.replace("```json", "").replace("```", "").strip()
-        schedule = json.loads(clean_text)
+        schedule = extract_json(raw_text)
         return jsonify({"schedule": schedule})
     except json.JSONDecodeError as e:
         return jsonify({"error": "JSON parse failed", "detail": str(e), "raw": raw_text}), 500
