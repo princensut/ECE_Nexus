@@ -39,7 +39,7 @@ def extract_json(text: str):
 
 
 # ── API config ────────────────────────────────────────────────────────────────
-GROQ_API_KEY = "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" # <-- paste your key here
+GROQ_API_KEY = "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" # <-- paste your key here
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -62,7 +62,7 @@ def call_groq(prompt: str) -> str:
 
 
 # ── Debug route ───────────────────────────────────────────────────────────────
-GROQ_API_KEY = "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"
+# GROQ_API_KEY = "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"
 
 @app.route("/api/debug")
 def debug():
