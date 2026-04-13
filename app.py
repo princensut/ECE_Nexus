@@ -8,7 +8,7 @@ import requests
 app = Flask(__name__)
 
 
-# ── Robust JSON extractor ─────────────────────────────────────────────────────
+
 def extract_json(text: str):
     """
     Pulls a JSON object or array out of a string that may be wrapped in
@@ -18,14 +18,14 @@ def extract_json(text: str):
       2. Regex-extract the first {...} or [...] block, then parse.
     Raises json.JSONDecodeError if nothing works.
     """
-    # 1. Strip all flavours of markdown code fences
+   
     cleaned = re.sub(r"```(?:json)?\s*", "", text, flags=re.IGNORECASE).replace("```", "").strip()
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
 
-    # 2. Pull the first {...} or [...] block (handles leading prose)
+ 
     for pattern in (r"(\{[\s\S]*\})", r"(\[[\s\S]*\])"):
         m = re.search(pattern, text)
         if m:
@@ -34,17 +34,17 @@ def extract_json(text: str):
             except json.JSONDecodeError:
                 pass
 
-    # Nothing worked — raise so the caller can return a useful error
+
     raise json.JSONDecodeError("No valid JSON found in model response", text, 0)
 
 
-# ── API config ────────────────────────────────────────────────────────────────
-GROQ_API_KEY = "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" # <-- paste your key here
+
+GROQ_API_KEY = "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" 
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
 
-# ── Helper — uses plain requests, no groq SDK ─────────────────────────────────
+
 def call_groq(prompt: str) -> str:
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -61,8 +61,7 @@ def call_groq(prompt: str) -> str:
     return resp.json()["choices"][0]["message"]["content"]
 
 
-# ── Debug route ───────────────────────────────────────────────────────────────
-# GROQ_API_KEY = "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"
+
 
 @app.route("/api/debug")
 def debug():
@@ -81,7 +80,7 @@ def debug():
     })
 
 
-# ── Routes ────────────────────────────────────────────────────────────────────
+
 @app.route("/")
 def index():
     return render_template("index.html")
