@@ -39,7 +39,7 @@ def extract_json(text: str):
 
 
 
-GROQ_API_KEY = "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" 
+GROQ_API_KEY = "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" 
 GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_URL     = "https://api.groq.com/openai/v1/chat/completions"
 
